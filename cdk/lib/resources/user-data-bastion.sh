@@ -9,7 +9,7 @@ set -o nounset -o errexit -o pipefail
 thresh=1800
 file="/tmp/activity"
 if ! test -e "$file" || pgrep -x -U ssm-user sh > /dev/null; then touch "$file"; fi
-eif test "$(date +%s)" -lt $(($(stat -c %Y "$file") + thresh)); then exit; fi
+if test "$(date +%s)" -lt $(($(stat -c %Y "$file") + thresh)); then exit; fi
 poweroff
 EOF
 chmod 755 /root/bin/poweroff-timer
