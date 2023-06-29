@@ -1,0 +1,24 @@
+#!/bin/bash
+set -o nounset -o errexit -o pipefail
+
+tscompile() {
+  ts_files=()
+  for ts_file in "$@"
+  do
+    js_file="${ts_file%.ts}.js"
+    : "${main_file:=$js_file}"
+    if ! test -e "$js_file" || test "$ts_file" -nt "$js_file"
+    then
+      ts_files+=("$ts_file")
+    fi
+  done
+  if test ${#ts_files[@]} -ne 0
+  then
+    npx tsc "${ts_files[@]}"
+  fi
+  echo "$main_file"
+}
+
+cd "$(dirname "$0")"
+main_file="$(tscompile project-name.ts)"
+node "$main_file"

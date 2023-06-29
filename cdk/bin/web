@@ -1,0 +1,48 @@
+#!/bin/bash
+set -o nounset -o errexit -o pipefail
+
+# This script is intended to run over an extended period of time, so it should be executed in a subshell environment to guarantee script atomicity.
+# shellcheck disable=SC1090
+if ! (return 0 2> /dev/null); then source "$0"; exit "$?"; fi
+
+env=
+target=
+project_name=
+cd "$(dirname "$0")"
+source lib.sh
+
+stack_name_vpc_persistent="$env-$project_name-vpc-persistent"
+
+case "$target" in
+  lambda )
+    listener_name=Listener8080
+    stack_name_web="$env-$project_name-lambda"
+    ;;
+  web )
+    listener_name=Listener80
+    stack_name_web="$env-$project_name-vpc-persistent"
+    ;;
+  * )
+    echo ? >&2
+    exit 1
+    ;;
+esac
+
+arn_alb=$(aws cloudformation describe-stack-resources --stack-name "$stack_name_vpc_persistent" --query \
+  "StackResources[? ResourceType == 'AWS::ElasticLoadBalancingV2::LoadBalancer'] | [0].PhysicalResourceId" \
+  --output text)
+dns_name=$(aws elbv2 describe-load-balancers --load-balancer-arns "$arn_alb" --query \
+  "LoadBalancers[? LoadBalancerArn == '$arn_alb'] | [0].DNSName" \
+  --output text)
+
+#aws cloudformation describe-stack-resources --stack-name "$stack_name_lambda"
+
+arn_listener=$(aws cloudformation describe-stack-resources --stack-name "$stack_name_web" --query \
+  "StackResources[? ResourceType == 'AWS::ElasticLoadBalancingV2::Listener' && starts_with(LogicalResourceId, '$listener_name')] | [0].PhysicalResourceId" \
+  --output text)
+
+port=$(aws elbv2 describe-listeners --listener-arns $arn_listener --query "Listeners[0].Port" --output text)
+
+url=http://"$dns_name":"$port"/
+echo url: "$url" >&2
+curl "$url"
