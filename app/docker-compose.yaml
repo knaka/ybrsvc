@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  ap:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      "DATABASE_URL": "postgresql://dbuser:dbpass@db:5432/ybrsvc"
+      "SESSION_SECRET_KEY": "5338607cf88649b9ea40cd863e42b17425841fc30b"
+    ports:
+      - ${PORT_APP:-3000}:3000
+  db:
+    # https://hub.docker.com/_/postgres/tags
+    # 11: Bullseye, 12: Bookworm // Debian version history - Wikipedia https://en.wikipedia.org/wiki/Debian_version_history
+    image: postgres:15.3-alpine
+    environment:
+      POSTGRES_USER: "dbuser"
+      POSTGRES_PASSWORD: "dbpass"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - ${PORT_DB:-5432}:5432
+
+volumes:
+  postgres_data:
