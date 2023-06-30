@@ -1,0 +1,8 @@
+#!/usr/bin/env node
+
+const path = require("path");
+
+(async () => {
+    await require("./transpile-lib")(path.join(path.dirname(__dirname), "scr"))
+    console.log(await require("../scr/resolve-url-srv")(process.argv[2]))
+})();
